@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+"""Get list of servers from AWS cloud"""
+
 import botocore
 import boto3
 
@@ -7,6 +9,8 @@ from errors import AwsApiError
 
 
 def parse_filters(filters=None):
+    """Parse filters defined by user"""
+
     filters_list = []
 
     if filters is None:
@@ -26,6 +30,8 @@ def parse_filters(filters=None):
 
 
 def parse_instances(instances=None):
+    """Parse list of EC2 instances returned by AWS API"""
+
     instances_list = []
 
     if instances is None:
@@ -60,6 +66,8 @@ def parse_instances(instances=None):
 
 
 def get_instances(region_name='us-east-1', filters=None):
+    """Make AWS API call to get list of EC2 instances"""
+
     filters_list = parse_filters(filters)
 
     ec2 = boto3.resource('ec2', region_name=region_name)

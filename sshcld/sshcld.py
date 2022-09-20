@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+"""sshcld: get cloud servers list for your SSH client"""
+
 import plugin_aws as aws
 
 from errors import AwsApiError
