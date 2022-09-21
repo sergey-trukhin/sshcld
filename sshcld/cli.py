@@ -2,9 +2,9 @@
 
 """sshcld: get cloud servers list for your SSH client"""
 
-import plugin_aws as aws
+import sshcld.plugins.aws as aws
 
-from errors import AwsApiError
+from sshcld.errors import AwsApiError
 
 filters = 'environment=prod,application=nginx'
 

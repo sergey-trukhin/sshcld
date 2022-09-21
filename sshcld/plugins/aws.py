@@ -5,7 +5,7 @@
 import botocore
 import boto3
 
-from errors import AwsApiError
+from sshcld.errors import AwsApiError
 
 
 def parse_filters(filters=None):
