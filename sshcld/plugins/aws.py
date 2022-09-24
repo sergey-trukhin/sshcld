@@ -16,15 +16,24 @@ def parse_filters(filters=None):
     if filters is None:
         return []
 
+    if not isinstance(filters, str):
+        return []
+
     conditions = filters.strip().split(',')
-    for condition in conditions:
-        condition_key, condition_value = condition.strip().split('=')
-        filters_list.append(
-            {
-                'Name': f'tag:{condition_key}',
-                'Values': [condition_value]
-            }
-        )
+
+    if conditions:
+        for condition in conditions:
+            try:
+                condition_key, condition_value = condition.strip().split('=')
+            except ValueError:
+                return []
+            else:
+                filters_list.append(
+                    {
+                        'Name': f'tag:{condition_key}',
+                        'Values': [condition_value]
+                    }
+                )
 
     return filters_list
 
@@ -42,18 +51,31 @@ def parse_instances(instances=None):
 
             try:
                 instance_name = next(tag['Value'] for tag in instance.tags if tag['Key'] == 'Name')
-            except StopIteration:
+            except (StopIteration, TypeError):
                 instance_name = ''
+            except AttributeError:
+                return {}
 
-            instances_list.append(
-                {
-                    'instance_id': instance.instance_id,
-                    'instance_name': instance_name,
-                    'private_ip_address': instance.private_ip_address,
-                    'public_ip_address': instance.public_ip_address,
-                    'tags': instance.tags,
-                }
-            )
+            try:
+                instances_list.append(
+                    {
+                        'instance_id': instance.instance_id,
+                        'instance_name': instance_name,
+                        'private_ip_address': instance.private_ip_address,
+                        'public_ip_address': instance.public_ip_address,
+                        'tags': instance.tags,
+                    }
+                )
+            except AttributeError:
+                instances_list.append(
+                    {
+                        'instance_id': 'unknown',
+                        'instance_name': instance_name,
+                        'private_ip_address': 'unknown',
+                        'public_ip_address': 'unknown',
+                        'tags': [],
+                    }
+                )
 
     except botocore.exceptions.ClientError as error:
         try:
