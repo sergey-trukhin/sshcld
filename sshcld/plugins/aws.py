@@ -57,13 +57,18 @@ def parse_instances(instances=None):
                 return {}
 
             try:
+                tags = {}
+                if instance.tags:
+                    for tag in instance.tags:
+                        tags[tag['Key']] = tag['Value']
+
                 instances_list.append(
                     {
                         'instance_id': instance.instance_id,
                         'instance_name': instance_name,
                         'private_ip_address': instance.private_ip_address,
                         'public_ip_address': instance.public_ip_address,
-                        'tags': instance.tags,
+                        'tags': tags,
                     }
                 )
             except AttributeError:
