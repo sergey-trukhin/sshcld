@@ -1,0 +1,2 @@
+ssh_connection_string: ssh username@%private_ip_address%
+test_parameter: test_value

@@ -74,54 +74,54 @@ def replace_variables(string=None, instance=None):
     return string
 
 
-app_config = load_configs()
-if not app_config:
-    print('Configuration cannot be empty. Either default or user-defined configuration file should exist.')
-    sys.exit(1)
+if __name__ == '__main__':
+    app_config = load_configs()
+    if not app_config:
+        print('Configuration cannot be empty. Either default or user-defined configuration file should exist.')
+        sys.exit(1)
 
 
-filters = 'environment=prod,application=nginx'
+    filters = 'environment=prod,application=nginx'
 
-try:
-    instances_list = aws.get_instances(region_name='eu-north-1')
-except AwsApiError as error:
-    print(error)
-else:
-    print(instances_list)
+    try:
+        instances_list = aws.get_instances(region_name='eu-north-1')
+    except AwsApiError as error:
+        print(error)
+    else:
+        print(instances_list)
 
-printable_tags = app_config.get('printable_tags', [])
+    printable_tags = app_config.get('printable_tags', [])
 
-cloud_name = app_config.get('default_cloud', 'aws')
-if cloud_name == 'aws':
-    native_client_string_param = 'aws_ssm_connection_string'
-else:
-    native_client_string_param = 'aws_ssm_connection_string'
+    cloud_name = app_config.get('default_cloud', 'aws')
+    if cloud_name == 'aws':
+        native_client_string_param = 'aws_ssm_connection_string'
+    else:
+        native_client_string_param = 'aws_ssm_connection_string'
+
+    for instance in instances_list:
+        ssh_string = replace_variables(string=app_config.get('ssh_connection_string', ''), instance=instance)
+        native_client_string = replace_variables(string=app_config.get(native_client_string_param, ''), instance=instance)
+
+        for tag in list(instance['tags'].keys()):
+            if tag not in printable_tags:
+                del instance['tags'][tag]
+
+        for printable_tag in printable_tags:
+            if printable_tag not in instance['tags']:
+                instance['tags'][printable_tag] = ''
+
+        for converted_tag in instance['tags']:
+            instance[converted_tag] = instance['tags'][converted_tag]
+
+        instance['ssh_string'] = ssh_string
+        instance['native_client_string'] = native_client_string
+
+        del instance['tags']
+
+    table_headers = {'instance_id': 'Instance ID', 'instance_name': 'Instance Name',
+                     'private_ip_address': 'Private IP', 'public_ip_address': 'Public IP',
+                     'ssh_string': 'SSH Connection', 'native_client_string': 'SSM Connection'}
 
 
-for instance in instances_list:
-    ssh_string = replace_variables(string=app_config.get('ssh_connection_string', ''), instance=instance)
-    native_client_string = replace_variables(string=app_config.get(native_client_string_param, ''), instance=instance)
-
-    for tag in list(instance['tags'].keys()):
-        if tag not in printable_tags:
-            del instance['tags'][tag]
-
-    for printable_tag in printable_tags:
-        if printable_tag not in instance['tags']:
-            instance['tags'][printable_tag] = ''
-
-    for converted_tag in instance['tags']:
-        instance[converted_tag] = instance['tags'][converted_tag]
-
-    instance['ssh_string'] = ssh_string
-    instance['native_client_string'] = native_client_string
-
-    del instance['tags']
-
-table_headers = {'instance_id': 'Instance ID', 'instance_name': 'Instance Name',
-                 'private_ip_address': 'Private IP', 'public_ip_address': 'Public IP',
-                 'ssh_string': 'SSH Connection', 'native_client_string': 'SSM Connection'}
-
-
-print()
-print(tabulate(instances_list, headers=table_headers))
+    print()
+    print(tabulate(instances_list, headers=table_headers))
