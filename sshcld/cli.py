@@ -2,6 +2,7 @@
 
 """sshcld: get cloud servers list for your SSH client"""
 
+import argparse
 import os
 from pathlib import Path
 import sys
@@ -74,17 +75,57 @@ def replace_variables(string=None, instance=None):
     return string
 
 
+def get_cli_args():
+    """Get CLI arguments"""
+
+    arg_parser = argparse.ArgumentParser(description='Get cloud servers list for your SSH client')
+
+    arg_parser.add_argument('-r', '--region', help='Cloud region')
+    arg_parser.add_argument('-f', '--filter', help='Filter cloud servers by tags')
+
+    cloud_group = arg_parser.add_mutually_exclusive_group()
+    cloud_group.add_argument('--aws', action='store_true', default=False, help='Use AWS cloud')
+    cloud_group.add_argument('--azure', action='store_true', default=False, help='Use Azure cloud')  # For future usage
+
+    arg_parser.add_argument('--ssh', action='store_true', default=True, help='Show SSH connection string')
+    arg_parser.add_argument('--ssm', action='store_true', default=False, help='Show AWS SSM connection string')
+
+    args = vars(arg_parser.parse_args())
+
+    return args
+
+
 if __name__ == '__main__':
+
+    cli_args = get_cli_args()
+
     app_config = load_configs()
     if not app_config:
         print('Configuration cannot be empty. Either default or user-defined configuration file should exist.')
         sys.exit(1)
 
+    if cli_args.get('region'):
+        cloud_region = cli_args.get('region')
+    else:
+        cloud_region = app_config.get('cloud_region')
 
-    filters = 'environment=prod,application=nginx'
+    if cli_args.get('aws'):
+        cloud_name = 'aws'
+    elif cli_args.get('azure'):
+        cloud_name = 'azure'
+    elif app_config.get('default_cloud'):
+        cloud_name = app_config.get('default_cloud')
+    else:
+        print('You should specify cloud provider name (aws, azure)')
+        sys.exit(1)
+
+    show_ssh_string = cli_args.get('ssh') or app_config.get('ssh_connection_string_enabled')
+    show_ssm_string = cli_args.get('ssm') or app_config.get('aws_ssm_connection_string_enabled')
+
+    filters = cli_args.get('filter', '')
 
     try:
-        instances_list = aws.get_instances(region_name='eu-north-1')
+        instances_list = aws.get_instances(region_name=cloud_region, filters=filters)
     except AwsApiError as error:
         print(error)
     else:

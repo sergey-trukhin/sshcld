@@ -3,5 +3,9 @@ printable_tags:
     - department
     - country
 ssh_connection_string: ssh %private_ip_address%
+ssh_connection_string_enabled: True
+
 aws_ssm_connection_string: aws ssm start-session --target %instance_id%
+aws_ssm_connection_string_enabled: True
+
 default_cloud: aws
