@@ -75,7 +75,7 @@ def replace_variables(string=None, instance=None):
     return string
 
 
-def get_cli_args():
+def get_cli_args(argv=None):
     """Get CLI arguments"""
 
     arg_parser = argparse.ArgumentParser(description='Get cloud servers list for your SSH client')
@@ -87,12 +87,38 @@ def get_cli_args():
     cloud_group.add_argument('--aws', action='store_true', default=False, help='Use AWS cloud')
     cloud_group.add_argument('--azure', action='store_true', default=False, help='Use Azure cloud')  # For future usage
 
-    arg_parser.add_argument('--ssh', action='store_true', default=True, help='Show SSH connection string')
+    arg_parser.add_argument('--ssh', action='store_true', default=False, help='Show SSH connection string')
     arg_parser.add_argument('--ssm', action='store_true', default=False, help='Show AWS SSM connection string')
 
-    args = vars(arg_parser.parse_args())
+    args = vars(arg_parser.parse_args(argv))
 
     return args
+
+
+def enrich_config(cli_args=None, yaml_config=None):
+    """Enrich YAML configuration using CLI arguments"""
+
+    if cli_args.get('region'):
+        yaml_config['cloud_region'] = cli_args.get('region')
+    if not yaml_config.get('cloud_region'):
+        yaml_config['cloud_region'] = None
+
+    if cli_args.get('aws'):
+        yaml_config['default_cloud'] = 'aws'
+    elif cli_args.get('azure'):
+        yaml_config['default_cloud'] = 'azure'
+    if not yaml_config.get('default_cloud'):
+        print('You should specify cloud provider name (aws, azure)')
+        sys.exit(1)
+
+    yaml_config['ssh_connection_string_enabled'] = (cli_args.get('ssh')
+                                                    or yaml_config.get('ssh_connection_string_enabled'))
+    yaml_config['aws_ssm_connection_string_enabled'] = (cli_args.get('ssm')
+                                                        or yaml_config.get('aws_ssm_connection_string_enabled'))
+
+    yaml_config['filters'] = cli_args.get('filter', '')
+
+    return yaml_config
 
 
 if __name__ == '__main__':
@@ -104,25 +130,7 @@ if __name__ == '__main__':
         print('Configuration cannot be empty. Either default or user-defined configuration file should exist.')
         sys.exit(1)
 
-    if cli_args.get('region'):
-        cloud_region = cli_args.get('region')
-    else:
-        cloud_region = app_config.get('cloud_region')
-
-    if cli_args.get('aws'):
-        cloud_name = 'aws'
-    elif cli_args.get('azure'):
-        cloud_name = 'azure'
-    elif app_config.get('default_cloud'):
-        cloud_name = app_config.get('default_cloud')
-    else:
-        print('You should specify cloud provider name (aws, azure)')
-        sys.exit(1)
-
-    show_ssh_string = cli_args.get('ssh') or app_config.get('ssh_connection_string_enabled')
-    show_ssm_string = cli_args.get('ssm') or app_config.get('aws_ssm_connection_string_enabled')
-
-    filters = cli_args.get('filter', '')
+    app_config = enrich_config(cli_args=cli_args, yaml_config=app_config)
 
     try:
         instances_list = aws.get_instances(region_name=cloud_region, filters=filters)
