@@ -100,7 +100,7 @@ def enrich_config(cli_args=None, yaml_config=None):
 
     if cli_args.get('region'):
         yaml_config['cloud_region'] = cli_args.get('region')
-    if not yaml_config.get('cloud_region'):
+    if not yaml_config.get('cloud_region') or yaml_config.get('cloud_region') == '':
         yaml_config['cloud_region'] = None
 
     if cli_args.get('aws'):
@@ -121,35 +121,41 @@ def enrich_config(cli_args=None, yaml_config=None):
     return yaml_config
 
 
-if __name__ == '__main__':
+def get_cloud_instances(app_config=None):
+    """Get list of cloud servers"""
+    instances_list = []
 
-    cli_args = get_cli_args()
-
-    app_config = load_configs()
-    if not app_config:
-        print('Configuration cannot be empty. Either default or user-defined configuration file should exist.')
-        sys.exit(1)
-
-    app_config = enrich_config(cli_args=cli_args, yaml_config=app_config)
-
-    try:
-        instances_list = aws.get_instances(region_name=cloud_region, filters=filters)
-    except AwsApiError as error:
-        print(error)
+    if app_config.get('default_cloud') == 'aws':
+        try:
+            instances_list = aws.get_instances(region_name=app_config.get('cloud_region'),
+                                               filters=app_config.get('filters'))
+        except AwsApiError as error:
+            print(error)
+            sys.exit(1)
     else:
-        print(instances_list)
+        print('You specified cloud that is not supported at the moment')
+
+    return instances_list
+
+
+def enrich_instances_metadata(app_config=None, instances=None):
+    """Add more metadata for each instance"""
+
+    if app_config is None:
+        print('Configuration cannot be empty')
+        sys.exit(1)
 
     printable_tags = app_config.get('printable_tags', [])
 
-    cloud_name = app_config.get('default_cloud', 'aws')
-    if cloud_name == 'aws':
+    if app_config.get('default_cloud') == 'aws':
         native_client_string_param = 'aws_ssm_connection_string'
     else:
-        native_client_string_param = 'aws_ssm_connection_string'
+        native_client_string_param = None
 
-    for instance in instances_list:
+    for instance in instances:
         ssh_string = replace_variables(string=app_config.get('ssh_connection_string', ''), instance=instance)
-        native_client_string = replace_variables(string=app_config.get(native_client_string_param, ''), instance=instance)
+        native_client_string = replace_variables(string=app_config.get(native_client_string_param, ''),
+                                                 instance=instance)
 
         for tag in list(instance['tags'].keys()):
             if tag not in printable_tags:
@@ -167,10 +173,48 @@ if __name__ == '__main__':
 
         del instance['tags']
 
+    return instances
+
+
+def generate_table(app_config=None, instances=None):
+    """Generate table with list of instances"""
+
+    if app_config is None:
+        print('Configuration cannot be empty')
+        sys.exit(1)
+
+    if app_config.get('default_cloud') == 'aws':
+        native_connection_name = 'SSM Connection'
+    else:
+        native_connection_name = 'Native Cloud Connection'
+
     table_headers = {'instance_id': 'Instance ID', 'instance_name': 'Instance Name',
                      'private_ip_address': 'Private IP', 'public_ip_address': 'Public IP',
-                     'ssh_string': 'SSH Connection', 'native_client_string': 'SSM Connection'}
+                     'ssh_string': 'SSH Connection', 'native_client_string': native_connection_name}
+
+    table = tabulate(instances, headers=table_headers)
+
+    return table
 
 
-    print()
-    print(tabulate(instances_list, headers=table_headers))
+def show_instances():
+    """Show all found instances"""
+
+    cli_args = get_cli_args()
+
+    app_config = load_configs()
+    if not app_config:
+        print('Configuration cannot be empty. Either default or user-defined configuration file should exist')
+        sys.exit(1)
+
+    app_config = enrich_config(cli_args=cli_args, yaml_config=app_config)
+
+    instances_list = get_cloud_instances(app_config=app_config)
+    enriched_instances_list = enrich_instances_metadata(app_config=app_config, instances=instances_list)
+    instances_table = generate_table(app_config=app_config, instances=enriched_instances_list)
+
+    print(f'\n{instances_table}\n')
+
+
+if __name__ == '__main__':
+    show_instances()
