@@ -146,3 +146,37 @@ def test_cli_enrich_config_region(cli_args, yaml_config, expected_result):
 ])
 def test_cli_enrich_config_cloud_name(cli_args, yaml_config, expected_result):
     assert cli.enrich_config(cli_args=cli_args, yaml_config=yaml_config)['default_cloud'] == expected_result
+
+
+@pytest.mark.parametrize('cli_args, yaml_config, expected_result', [
+    ({'ssh': False}, {'default_cloud': 'aws', 'ssh_connection_string_enabled': False}, False),
+    ({'ssh': True}, {'default_cloud': 'aws', 'ssh_connection_string_enabled': False}, True),
+    ({'ssh': False}, {'default_cloud': 'aws', 'ssh_connection_string_enabled': True}, True),
+    ({'ssh': True}, {'default_cloud': 'aws', 'ssh_connection_string_enabled': True}, True),
+])
+def test_cli_enrich_config_ssh_string(cli_args, yaml_config, expected_result):
+    assert cli.enrich_config(cli_args=cli_args,
+                             yaml_config=yaml_config)['ssh_connection_string_enabled'] == expected_result
+
+
+@pytest.mark.parametrize('cli_args, yaml_config, expected_result', [
+    ({'ssm': False}, {'default_cloud': 'aws', 'aws_ssm_connection_string_enabled': False}, False),
+    ({'ssm': True}, {'default_cloud': 'aws', 'aws_ssm_connection_string_enabled': False}, True),
+    ({'ssm': False}, {'default_cloud': 'aws', 'aws_ssm_connection_string_enabled': True}, True),
+    ({'ssm': True}, {'default_cloud': 'aws', 'aws_ssm_connection_string_enabled': True}, True),
+])
+def test_cli_enrich_config_ssm_string(cli_args, yaml_config, expected_result):
+    assert cli.enrich_config(cli_args=cli_args,
+                             yaml_config=yaml_config)['aws_ssm_connection_string_enabled'] == expected_result
+
+
+@pytest.mark.parametrize('cli_args, yaml_config, expected_result', [
+    ({}, {'default_cloud': 'aws'}, None),
+    ({'filter': ''}, {'default_cloud': 'aws'}, ''),
+    ({'filter': 'environment=production'}, {'default_cloud': 'aws'}, 'environment=production'),
+    ({'filter': 'environment=production,department=marketing,application=nginx'},
+     {'default_cloud': 'aws'}, 'environment=production,department=marketing,application=nginx'),
+])
+def test_cli_enrich_config_filters(cli_args, yaml_config, expected_result):
+    assert cli.enrich_config(cli_args=cli_args,
+                             yaml_config=yaml_config)['filters'] == expected_result

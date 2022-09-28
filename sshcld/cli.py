@@ -116,7 +116,7 @@ def enrich_config(cli_args=None, yaml_config=None):
     yaml_config['aws_ssm_connection_string_enabled'] = (cli_args.get('ssm')
                                                         or yaml_config.get('aws_ssm_connection_string_enabled'))
 
-    yaml_config['filters'] = cli_args.get('filter', '')
+    yaml_config['filters'] = cli_args.get('filter', None)
 
     return yaml_config
 
