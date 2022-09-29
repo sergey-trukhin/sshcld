@@ -123,7 +123,10 @@ def enrich_config(cli_args=None, yaml_config=None):
 
 def get_cloud_instances(app_config=None):
     """Get list of cloud servers"""
-    instances_list = []
+
+    if app_config is None:
+        print('Configuration cannot be empty')
+        sys.exit(1)
 
     if app_config.get('default_cloud') == 'aws':
         try:
@@ -134,6 +137,7 @@ def get_cloud_instances(app_config=None):
             sys.exit(1)
     else:
         print('You specified cloud that is not supported at the moment')
+        sys.exit(1)
 
     return instances_list
 

@@ -33,43 +33,35 @@ def aws_ec2_instances(aws_ec2_client):
 
     tag_names = ['webserver01', 'appserver01', '', 'NA']
     tag_environments = ['production', 'staging', '', 'NA']
-    tag_department = ['marketing', 'finance', '', 'NA']
-    tag_costcenters = ['cc001', 'cc002', '', 'NA']
+    tag_departments = ['marketing', 'finance', '', 'NA']
 
     for tag_name in tag_names:
         for tag_environment in tag_environments:
-            for tag_department in tag_department:
-                for tag_costcenter in tag_costcenters:
-                    tags_list = []
-                    if tag_costcenter != 'NA':
-                        tags_list.append(
-                            {
-                                'Key': 'costcenter',
-                                'Value': tag_costcenter
-                            }
-                        )
-                    if tag_department != 'NA':
-                        tags_list.append(
-                            {
-                                'Key': 'department',
-                                'Value': tag_department
-                            }
-                        )
-                    if tag_environment != 'NA':
-                        tags_list.append(
-                            {
-                                'Key': 'environment',
-                                'Value': tag_environment
-                            }
-                        )
-                    if tag_name != 'NA':
-                        tags_list.append(
-                            {
-                                'Key': 'Name',
-                                'Value': tag_name
-                            }
-                        )
+            for tag_department in tag_departments:
+                tags_list = []
+                if tag_department != 'NA':
+                    tags_list.append(
+                        {
+                            'Key': 'department',
+                            'Value': tag_department
+                        }
+                    )
+                if tag_environment != 'NA':
+                    tags_list.append(
+                        {
+                            'Key': 'environment',
+                            'Value': tag_environment
+                        }
+                    )
+                if tag_name != 'NA':
+                    tags_list.append(
+                        {
+                            'Key': 'Name',
+                            'Value': tag_name
+                        }
+                    )
 
+                if tags_list:
                     aws_ec2_client.run_instances(
                         ImageId=image_id,
                         InstanceType='t3.small',

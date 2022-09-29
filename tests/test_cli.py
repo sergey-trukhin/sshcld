@@ -180,3 +180,100 @@ def test_cli_enrich_config_ssm_string(cli_args, yaml_config, expected_result):
 def test_cli_enrich_config_filters(cli_args, yaml_config, expected_result):
     assert cli.enrich_config(cli_args=cli_args,
                              yaml_config=yaml_config)['filters'] == expected_result
+
+
+def test_cli_get_cloud_instances_empty_region(aws_ec2_instances):
+    actual_result = cli.get_cloud_instances(app_config={'default_cloud': 'aws', 'cloud_region': 'us-west-1'})
+    assert len(actual_result) == 0
+
+
+def test_cli_get_cloud_instances_empty_filter(aws_ec2_instances):
+    actual_result = cli.get_cloud_instances(app_config={'default_cloud': 'aws', 'cloud_region': 'us-east-1'})
+    print(actual_result)
+    assert len(actual_result) == 63
+
+
+def test_cli_get_cloud_instances_simple_filter(aws_ec2_instances):
+    actual_result = cli.get_cloud_instances(app_config={'default_cloud': 'aws', 'cloud_region': 'us-east-1',
+                                                        'filters': 'environment=production'})
+    assert len(actual_result) == 16
+
+
+def test_cli_get_cloud_instances_complex_filter(aws_ec2_instances):
+    actual_result = cli.get_cloud_instances(app_config={'default_cloud': 'aws', 'cloud_region': 'us-east-1',
+                                                        'filters': 'environment=production,department=marketing'})
+    assert len(actual_result) == 4
+
+
+def test_cli_get_cloud_instances_non_existing_filter(aws_ec2_instances):
+    actual_result = cli.get_cloud_instances(
+        app_config={'default_cloud': 'aws', 'cloud_region': 'us-east-1',
+                    'filters': 'environment=production,department=marketing,application=nginx'})
+    assert len(actual_result) == 0
+
+
+def test_cli_enrich_instances_metadata_no_instances():
+    expected_result = []
+    actual_result = cli.enrich_instances_metadata(instances=[], app_config={})
+    assert actual_result == expected_result
+
+
+def test_cli_enrich_instances_metadata_no_config(aws_ec2_instance_fake):
+    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'private_ip_address': '10.0.0.1',
+                        'public_ip_address': '1.2.3.4', 'ssh_string': '', 'native_client_string': ''}]
+    actual_result = cli.enrich_instances_metadata(instances=[aws_ec2_instance_fake], app_config={})
+    assert actual_result == expected_result
+
+
+def test_cli_enrich_instances_metadata_ssh_string(aws_ec2_instance_fake):
+    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'private_ip_address': '10.0.0.1',
+                        'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1', 'native_client_string': ''}]
+    actual_result = cli.enrich_instances_metadata(
+        instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%'})
+    assert actual_result == expected_result
+
+
+def test_cli_enrich_instances_metadata_ssh_ssm_string(aws_ec2_instance_fake):
+    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'private_ip_address': '10.0.0.1',
+                        'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1', 'native_client_string': ''}]
+    actual_result = cli.enrich_instances_metadata(
+        instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%',
+                                                       'aws_ssm_connection_string': 'ssm %instance_id%'})
+    assert actual_result == expected_result
+
+
+def test_cli_enrich_instances_metadata_ssh_ssm_string_cloud(aws_ec2_instance_fake):
+    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'private_ip_address': '10.0.0.1',
+                        'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1',
+                        'native_client_string': 'ssm i-123456'}]
+    actual_result = cli.enrich_instances_metadata(
+        instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%',
+                                                       'aws_ssm_connection_string': 'ssm %instance_id%',
+                                                       'default_cloud': 'aws'})
+    assert actual_result == expected_result
+
+
+def test_cli_enrich_instances_metadata_existing_tags(aws_ec2_instance_fake):
+    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'private_ip_address': '10.0.0.1',
+                        'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1',
+                        'native_client_string': 'ssm i-123456', 'environment': 'production',
+                        'department': 'marketing'}]
+    actual_result = cli.enrich_instances_metadata(
+        instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%',
+                                                       'aws_ssm_connection_string': 'ssm %instance_id%',
+                                                       'default_cloud': 'aws',
+                                                       'printable_tags': ['environment', 'department']})
+    assert actual_result == expected_result
+
+
+def test_cli_enrich_instances_metadata_non_existing_tags(aws_ec2_instance_fake):
+    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'private_ip_address': '10.0.0.1',
+                        'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1',
+                        'native_client_string': 'ssm i-123456', 'environment': 'production',
+                        'department': 'marketing', 'application': ''}]
+    actual_result = cli.enrich_instances_metadata(
+        instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%',
+                                                       'aws_ssm_connection_string': 'ssm %instance_id%',
+                                                       'default_cloud': 'aws',
+                                                       'printable_tags': ['environment', 'department', 'application']})
+    assert actual_result == expected_result
