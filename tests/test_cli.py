@@ -277,3 +277,24 @@ def test_cli_enrich_instances_metadata_non_existing_tags(aws_ec2_instance_fake):
                                                        'default_cloud': 'aws',
                                                        'printable_tags': ['environment', 'department', 'application']})
     assert actual_result == expected_result
+
+
+def test_cli_generate_table_no_instances():
+    actual_result = cli.generate_table(app_config={'default_cloud': 'aws'})
+    assert actual_result == 'No servers found matching your filter'
+
+
+def test_cli_generate_table_one_instance_aws(aws_ec2_instance_fake):
+    instance = aws_ec2_instance_fake.copy()
+    instance['ssh_string'] = 'ssh localhost'
+    instance['native_client_string'] = 'ssm localhost'
+    actual_result = cli.generate_table(app_config={'default_cloud': 'aws'}, instances=[instance])
+    assert 'SSH Connection' in actual_result and 'SSM Connection' in actual_result and 'i-123456' in actual_result
+
+
+def test_cli_generate_table_one_instance_fake_cloud(aws_ec2_instance_fake):
+    instance = aws_ec2_instance_fake.copy()
+    instance['ssh_string'] = 'ssh localhost'
+    instance['native_client_string'] = 'ssm localhost'
+    actual_result = cli.generate_table(app_config={'default_cloud': 'fakecloud'}, instances=[instance])
+    assert 'SSH Connection' in actual_result and 'Native Cloud Connection' in actual_result

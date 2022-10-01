@@ -187,6 +187,9 @@ def generate_table(app_config=None, instances=None):
         print('Configuration cannot be empty')
         sys.exit(1)
 
+    if instances is None or not instances:
+        return 'No servers found matching your filter'
+
     if app_config.get('default_cloud') == 'aws':
         native_connection_name = 'SSM Connection'
     else:
