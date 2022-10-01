@@ -25,7 +25,7 @@ def open_yaml_file(path=None):
         with open(path, 'r', encoding='utf-8') as yamlfile:
             yaml_content = yaml.safe_load(yamlfile)
     except FileNotFoundError:
-        print(f'YAML config does not exist: {path}')
+        pass
     except PermissionError:
         print(f'YAML config has incorrect permissions: {path}')
     except (yaml.scanner.ScannerError, yaml.parser.ParserError, yaml.YAMLError) as error:
@@ -38,7 +38,7 @@ def load_configs(default_config_path=None, user_config_path=None):
     """Combine YAML configurations"""
 
     if default_config_path is None:
-        default_config_path = 'sshcld.yaml'
+        default_config_path = os.path.join(Path(__file__).parent, 'sshcld.yaml')
     default_config = open_yaml_file(path=default_config_path)
 
     if user_config_path is None:
