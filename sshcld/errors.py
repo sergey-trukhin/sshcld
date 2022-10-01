@@ -2,6 +2,6 @@
 
 """Custom exceptions collection"""
 
+
 class AwsApiError(Exception):
     """Custom exception for AWS API"""
-    pass

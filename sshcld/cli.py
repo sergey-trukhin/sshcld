@@ -9,7 +9,7 @@ import sys
 from tabulate import tabulate
 import yaml
 
-import sshcld.plugins.aws as aws
+from sshcld.plugins import aws
 from sshcld.errors import AwsApiError
 
 
@@ -22,7 +22,7 @@ def open_yaml_file(path=None):
         return {}
 
     try:
-        with open(path, 'r') as yamlfile:
+        with open(path, 'r', encoding='utf-8') as yamlfile:
             yaml_content = yaml.safe_load(yamlfile)
     except FileNotFoundError:
         print(f'YAML config does not exist: {path}')

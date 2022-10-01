@@ -31,13 +31,13 @@ def parse_filters(filters=None):
                 if condition_key == 'FILTER_INSTANCE_ID':
                     filters_list = [condition_value]
                     break
-                else:
-                    filters_list.append(
-                        {
-                            'Name': f'tag:{condition_key}',
-                            'Values': [condition_value]
-                        }
-                    )
+
+                filters_list.append(
+                    {
+                        'Name': f'tag:{condition_key}',
+                        'Values': [condition_value]
+                    }
+                )
 
     return filters_list
 
@@ -90,11 +90,11 @@ def parse_instances(instances=None):
         try:
             error_message = error.response['Error']['Message']
             error_code = error.response['Error']['Code']
-            if error_code == 'InvalidInstanceID.NotFound' or error_code == 'InvalidInstanceID.Malformed':
+            if error_code in ('InvalidInstanceID.NotFound', 'InvalidInstanceID.Malformed'):
                 return []
         except KeyError:
             error_message = error
-        raise AwsApiError(error_message)
+        raise AwsApiError(error_message) from error
 
     return instances_list
 
@@ -120,7 +120,7 @@ def get_instances(region_name='us-east-1', filters=None):
 
     try:
         instances_list = parse_instances(instances)
-    except AwsApiError:
-        raise
+    except AwsApiError as error:
+        raise AwsApiError from error
 
     return instances_list

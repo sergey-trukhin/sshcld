@@ -1,9 +1,12 @@
 FROM python:3.10.4-alpine3.16
 LABEL maintainer="Sergey Trukhin <satruhin@gmail.com>"
 
-WORKDIR /app/tests/
+WORKDIR /app/
 
 COPY ${PWD}/requirements.txt /app/tests/requirements.txt
-RUN pip3 install -r requirements.txt
+RUN pip3 install -r /app/tests/requirements.txt
 
-CMD ["pytest", "-p", "no:cacheprovider"]
+COPY ${PWD}/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+CMD ["/entrypoint.sh"]

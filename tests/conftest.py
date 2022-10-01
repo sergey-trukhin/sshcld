@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 
-import boto3
+"""Common pytest fixtures for other tests"""
+
 import os
+
+import boto3
 import pytest
 
 from moto import mock_ec2
 
 
-@pytest.fixture(scope="session")
-def aws_credentials():
+@pytest.fixture(name='aws_credentials', scope="session")
+def define_aws_credentials():
     """Mocked AWS Credentials for moto"""
     os.environ["AWS_ACCESS_KEY_ID"] = "testing"
     os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
@@ -17,8 +20,10 @@ def aws_credentials():
     os.environ["AWS_DEFAULT_REGION"] = "us-west-2"
 
 
-@pytest.fixture(scope="session")
-def aws_ec2_client(aws_credentials):
+# pylint: disable=W0613
+@pytest.fixture(name='aws_ec2_client', scope="session")
+def create_aws_ec2_client(aws_credentials):
+    """Create EC2 client for other tests"""
     with mock_ec2():
         ec2_client = boto3.client("ec2", region_name="us-east-1")
         yield ec2_client
