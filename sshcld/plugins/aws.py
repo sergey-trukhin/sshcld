@@ -86,6 +86,10 @@ def parse_instances(instances=None):
                     }
                 )
 
+    except botocore.exceptions.NoCredentialsError as error:
+        print(error)  # error message is not shown without print
+        raise AwsApiError(error) from error
+
     except botocore.exceptions.ClientError as error:
         try:
             error_message = error.response['Error']['Message']
@@ -104,7 +108,10 @@ def get_instances(region_name='us-east-1', filters=None):
 
     filters_list = parse_filters(filters)
 
-    ec2 = boto3.resource('ec2', region_name=region_name)
+    try:
+        ec2 = boto3.resource('ec2', region_name=region_name)
+    except botocore.exceptions.NoRegionError as error:
+        raise AwsApiError(error) from error
 
     if len(filters_list) == 1 and isinstance(filters_list[0], str):
         instances = ec2.instances.filter(
