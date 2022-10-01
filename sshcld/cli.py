@@ -81,7 +81,11 @@ def get_cli_args(argv=None):
     arg_parser = argparse.ArgumentParser(description='Get cloud servers list for your SSH client')
 
     arg_parser.add_argument('-r', '--region', help='Cloud region')
-    arg_parser.add_argument('-f', '--filter', help='Filter cloud servers by tags')
+
+    filter_type = arg_parser.add_mutually_exclusive_group()
+    filter_type.add_argument('-f', '--filter', help='Filter cloud servers by tags')
+    filter_type.add_argument('-n', '--name', help='Filter cloud servers by name')
+    filter_type.add_argument('-i', '--id', help='Filter cloud servers by server ID')
 
     cloud_group = arg_parser.add_mutually_exclusive_group()
     cloud_group.add_argument('--aws', action='store_true', default=False, help='Use AWS cloud')
@@ -116,7 +120,14 @@ def enrich_config(cli_args=None, yaml_config=None):
     yaml_config['aws_ssm_connection_string_enabled'] = (cli_args.get('ssm')
                                                         or yaml_config.get('aws_ssm_connection_string_enabled'))
 
-    yaml_config['filters'] = cli_args.get('filter', None)
+    if cli_args.get('filter'):
+        yaml_config['filters'] = cli_args.get('filter')
+    elif cli_args.get('name'):
+        yaml_config['filters'] = f'Name={cli_args.get("name")}'
+    elif cli_args.get('id'):
+        yaml_config['filters'] = f'FILTER_INSTANCE_ID={cli_args.get("id")}'
+    else:
+        yaml_config['filters'] = None
 
     return yaml_config
 

@@ -83,7 +83,8 @@ def test_cli_replace_variables_all_matches_with_tags(aws_ec2_instance_fake):
 
 def test_cli_get_cli_args_no_args():
     actual_result = cli.get_cli_args([])
-    expected_result = {'region': None, 'filter': None, 'aws': False, 'azure': False, 'ssh': False, 'ssm': False}
+    expected_result = {'region': None, 'filter': None, 'name': None, 'id': None,
+                       'aws': False, 'azure': False, 'ssh': False, 'ssm': False}
     assert expected_result == actual_result
 
 
@@ -95,6 +96,17 @@ def test_cli_get_cli_args_region():
 def test_cli_get_cli_args_filter():
     actual_result = cli.get_cli_args(['-f', 'environment=production,department=marketing'])
     assert actual_result['filter'] == 'environment=production,department=marketing'
+
+
+def test_cli_get_cli_args_name():
+    actual_result = cli.get_cli_args(['-n', 'webserver01'])
+    print(actual_result)
+    assert actual_result['name'] == 'webserver01'
+
+
+def test_cli_get_cli_args_id():
+    actual_result = cli.get_cli_args(['-i', 'i-987654321'])
+    assert actual_result['id'] == 'i-987654321'
 
 
 def test_cli_get_cli_args_aws():
@@ -119,8 +131,8 @@ def test_cli_get_cli_args_ssm():
 
 def test_cli_get_cli_args_all_args():
     actual_result = cli.get_cli_args(['-r', 'eu-west-1', '-f', 'environment=production', '--aws', '--ssh', '--ssm'])
-    expected_result = {'region': 'eu-west-1', 'filter': 'environment=production', 'aws': True,
-                       'azure': False, 'ssh': True, 'ssm': True}
+    expected_result = {'region': 'eu-west-1', 'filter': 'environment=production', 'name': None, 'id': None,
+                       'aws': True, 'azure': False, 'ssh': True, 'ssm': True}
     assert expected_result == actual_result
 
 
@@ -172,7 +184,7 @@ def test_cli_enrich_config_ssm_string(cli_args, yaml_config, expected_result):
 
 @pytest.mark.parametrize('cli_args, yaml_config, expected_result', [
     ({}, {'default_cloud': 'aws'}, None),
-    ({'filter': ''}, {'default_cloud': 'aws'}, ''),
+    ({'filter': ''}, {'default_cloud': 'aws'}, None),
     ({'filter': 'environment=production'}, {'default_cloud': 'aws'}, 'environment=production'),
     ({'filter': 'environment=production,department=marketing,application=nginx'},
      {'default_cloud': 'aws'}, 'environment=production,department=marketing,application=nginx'),
@@ -180,6 +192,24 @@ def test_cli_enrich_config_ssm_string(cli_args, yaml_config, expected_result):
 def test_cli_enrich_config_filters(cli_args, yaml_config, expected_result):
     assert cli.enrich_config(cli_args=cli_args,
                              yaml_config=yaml_config)['filters'] == expected_result
+
+
+@pytest.mark.parametrize('cli_args, yaml_config, expected_result', [
+    ({}, {'default_cloud': 'aws'}, None),
+    ({'name': ''}, {'default_cloud': 'aws'}, None),
+    ({'name': 'webserver01'}, {'default_cloud': 'aws'}, 'Name=webserver01'),
+])
+def test_cli_enrich_config_filters_name(cli_args, yaml_config, expected_result):
+    assert cli.enrich_config(cli_args=cli_args, yaml_config=yaml_config)['filters'] == expected_result
+
+
+@pytest.mark.parametrize('cli_args, yaml_config, expected_result', [
+    ({}, {'default_cloud': 'aws'}, None),
+    ({'id': ''}, {'default_cloud': 'aws'}, None),
+    ({'id': 'i-123456'}, {'default_cloud': 'aws'}, 'FILTER_INSTANCE_ID=i-123456'),
+])
+def test_cli_enrich_config_filters_id(cli_args, yaml_config, expected_result):
+    assert cli.enrich_config(cli_args=cli_args, yaml_config=yaml_config)['filters'] == expected_result
 
 
 def test_cli_get_cloud_instances_empty_region(aws_ec2_instances):

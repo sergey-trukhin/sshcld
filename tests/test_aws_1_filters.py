@@ -43,3 +43,15 @@ def test_aws_get_instances_non_existing_tag_values(aws_ec2_instances):
     """Check that no instances are returned from unused AWS region"""
     assert len(aws.get_instances(region_name='us-east-1',
                                  filters='environment=dev,department=finance')) == 0
+
+
+def test_aws_get_instances_name_tag(aws_ec2_instances):
+    """Check that no instances are returned from unused AWS region"""
+    assert len(aws.get_instances(region_name='us-east-1',
+                                 filters='Name=webserver01')) == 16
+
+
+def test_aws_get_instances_instance_id(aws_ec2_instances):
+    """Check that no instances are returned from unused AWS region"""
+    assert len(aws.get_instances(region_name='us-east-1',
+                                 filters='FILTER_INSTANCE_ID=i-123456789')) == 0

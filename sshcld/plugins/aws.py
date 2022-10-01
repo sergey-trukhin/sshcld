@@ -28,12 +28,16 @@ def parse_filters(filters=None):
             except ValueError:
                 return []
             else:
-                filters_list.append(
-                    {
-                        'Name': f'tag:{condition_key}',
-                        'Values': [condition_value]
-                    }
-                )
+                if condition_key == 'FILTER_INSTANCE_ID':
+                    filters_list = [condition_value]
+                    break
+                else:
+                    filters_list.append(
+                        {
+                            'Name': f'tag:{condition_key}',
+                            'Values': [condition_value]
+                        }
+                    )
 
     return filters_list
 
@@ -85,6 +89,9 @@ def parse_instances(instances=None):
     except botocore.exceptions.ClientError as error:
         try:
             error_message = error.response['Error']['Message']
+            error_code = error.response['Error']['Code']
+            if error_code == 'InvalidInstanceID.NotFound' or error_code == 'InvalidInstanceID.Malformed':
+                return []
         except KeyError:
             error_message = error
         raise AwsApiError(error_message)
@@ -99,11 +106,17 @@ def get_instances(region_name='us-east-1', filters=None):
 
     ec2 = boto3.resource('ec2', region_name=region_name)
 
-    instances = ec2.instances.filter(
-        Filters=filters_list,
-        DryRun=False,
-        MaxResults=1000,
-    )
+    if len(filters_list) == 1 and isinstance(filters_list[0], str):
+        instances = ec2.instances.filter(
+            InstanceIds=filters_list,
+            DryRun=False,
+        )
+    else:
+        instances = ec2.instances.filter(
+            Filters=filters_list,
+            DryRun=False,
+            MaxResults=1000,
+        )
 
     try:
         instances_list = parse_instances(instances)

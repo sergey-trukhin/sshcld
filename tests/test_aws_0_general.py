@@ -36,6 +36,18 @@ def test_aws_parse_filters_multiple_filters():
     assert expected_result == actual_result
 
 
+def test_aws_parse_filters_name_filter():
+    expected_result = [{'Name': 'tag:Name', 'Values': ['webserver01']}]
+    actual_result = aws.parse_filters(filters='Name=webserver01')
+    assert expected_result == actual_result
+
+
+def test_aws_parse_filters_id_filter():
+    expected_result = ['i-123456']
+    actual_result = aws.parse_filters(filters='FILTER_INSTANCE_ID=i-123456')
+    assert expected_result == actual_result
+
+
 def test_aws_parse_instances_no_instances():
     actual_result = aws.parse_instances()
     assert len(actual_result) == 0
