@@ -96,7 +96,7 @@ def test_cli_replace_variables_all_matches_with_tags(aws_ec2_instance_fake):
 def test_cli_get_cli_args_no_args():
     """Test that CLI arguments are parsed correctly if not defined"""
     actual_result = cli.get_cli_args([])
-    expected_result = {'region': None, 'filter': None, 'name': None, 'id': None,
+    expected_result = {'region': None, 'profile': None, 'filter': None, 'name': None, 'id': None,
                        'aws': False, 'azure': False, 'ssh': False, 'ssm': False}
     assert expected_result == actual_result
 
@@ -105,6 +105,12 @@ def test_cli_get_cli_args_region():
     """Test that region from CLI arguments is parsed correctly"""
     actual_result = cli.get_cli_args(['-r', 'eu-central-1'])
     assert actual_result['region'] == 'eu-central-1'
+
+
+def test_cli_get_cli_args_profile():
+    """Test that profile from CLI arguments is parsed correctly"""
+    actual_result = cli.get_cli_args(['-p', 'prod'])
+    assert actual_result['profile'] == 'prod'
 
 
 def test_cli_get_cli_args_filter():
@@ -152,9 +158,10 @@ def test_cli_get_cli_args_ssm():
 
 def test_cli_get_cli_args_all_args():
     """Test that all CLI arguments are parsed correctly"""
-    actual_result = cli.get_cli_args(['-r', 'eu-west-1', '-f', 'environment=production', '--aws', '--ssh', '--ssm'])
-    expected_result = {'region': 'eu-west-1', 'filter': 'environment=production', 'name': None, 'id': None,
-                       'aws': True, 'azure': False, 'ssh': True, 'ssm': True}
+    actual_result = cli.get_cli_args(['-r', 'eu-west-1', '-p', 'prod',
+                                      '-f', 'environment=production', '--aws', '--ssh', '--ssm'])
+    expected_result = {'region': 'eu-west-1', 'profile': 'prod', 'filter': 'environment=production',
+                       'name': None, 'id': None, 'aws': True, 'azure': False, 'ssh': True, 'ssm': True}
     assert expected_result == actual_result
 
 
@@ -167,6 +174,17 @@ def test_cli_get_cli_args_all_args():
 def test_cli_enrich_config_region(cli_args, yaml_config, expected_result):
     """Test that config enrichment works for region"""
     assert cli.enrich_config(cli_args=cli_args, yaml_config=yaml_config)['cloud_region'] == expected_result
+
+
+@pytest.mark.parametrize('cli_args, yaml_config, expected_result', [
+    ({}, {'default_cloud': 'aws'}, None),
+    ({'profile': 'prod'}, {'default_cloud': 'aws'}, 'prod'),
+    ({}, {'cloud_profile': 'staging', 'default_cloud': 'aws'}, 'staging'),
+    ({'profile': 'prod'}, {'cloud_profile': 'staging', 'default_cloud': 'aws'}, 'prod'),
+])
+def test_cli_enrich_config_profile(cli_args, yaml_config, expected_result):
+    """Test that config enrichment works for region"""
+    assert cli.enrich_config(cli_args=cli_args, yaml_config=yaml_config)['cloud_profile'] == expected_result
 
 
 @pytest.mark.parametrize('cli_args, yaml_config, expected_result', [

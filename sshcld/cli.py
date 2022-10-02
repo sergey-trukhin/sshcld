@@ -81,6 +81,7 @@ def get_cli_args(argv=None):
     arg_parser = argparse.ArgumentParser(description='Get cloud servers list for your SSH client')
 
     arg_parser.add_argument('-r', '--region', help='Cloud region')
+    arg_parser.add_argument('-p', '--profile', help='Cloud profile')
 
     filter_type = arg_parser.add_mutually_exclusive_group()
     filter_type.add_argument('-f', '--filter', help='Filter cloud servers by tags')
@@ -106,6 +107,11 @@ def enrich_config(cli_args=None, yaml_config=None):
         yaml_config['cloud_region'] = cli_args.get('region')
     if not yaml_config.get('cloud_region') or yaml_config.get('cloud_region') == '':
         yaml_config['cloud_region'] = None
+
+    if cli_args.get('profile'):
+        yaml_config['cloud_profile'] = cli_args.get('profile')
+    if not yaml_config.get('cloud_profile') or yaml_config.get('cloud_profile') == '':
+        yaml_config['cloud_profile'] = None
 
     if cli_args.get('aws'):
         yaml_config['default_cloud'] = 'aws'
@@ -142,7 +148,8 @@ def get_cloud_instances(app_config=None):
     if app_config.get('default_cloud') == 'aws':
         try:
             instances_list = aws.get_instances(region_name=app_config.get('cloud_region'),
-                                               filters=app_config.get('filters'))
+                                               filters=app_config.get('filters'),
+                                               profile_name=app_config.get('cloud_profile'))
         except AwsApiError as error:
             print(error)
             sys.exit(1)

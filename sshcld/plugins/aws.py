@@ -103,14 +103,18 @@ def parse_instances(instances=None):
     return instances_list
 
 
-def get_instances(region_name='us-east-1', filters=None):
+def get_instances(region_name='us-east-1', filters=None, profile_name=None):
     """Make AWS API call to get list of EC2 instances"""
 
     filters_list = parse_filters(filters)
 
     try:
+        if profile_name is not None and profile_name:
+            boto3.setup_default_session(profile_name=profile_name)
         ec2 = boto3.resource('ec2', region_name=region_name)
     except botocore.exceptions.NoRegionError as error:
+        raise AwsApiError(error) from error
+    except botocore.exceptions.ProfileNotFound as error:
         raise AwsApiError(error) from error
 
     if len(filters_list) == 1 and isinstance(filters_list[0], str):
