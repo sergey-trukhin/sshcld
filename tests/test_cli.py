@@ -337,8 +337,8 @@ def test_cli_enrich_instances_metadata_no_instances():
 
 def test_cli_enrich_instances_metadata_no_config(aws_ec2_instance_fake):
     """Test that instance metadata enrichment works if no config"""
-    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'private_ip_address': '10.0.0.1',
-                        'public_ip_address': '1.2.3.4', 'ssh_string': '', 'native_client_string': ''}]
+    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx',
+                        'private_ip_address': '10.0.0.1', 'public_ip_address': '1.2.3.4'}]
     actual_result = cli.enrich_instances_metadata(instances=[aws_ec2_instance_fake], app_config={})
     assert actual_result == expected_result
 
@@ -346,9 +346,10 @@ def test_cli_enrich_instances_metadata_no_config(aws_ec2_instance_fake):
 def test_cli_enrich_instances_metadata_ssh_string(aws_ec2_instance_fake):
     """Test that instance metadata enrichment works for SSH string"""
     expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'private_ip_address': '10.0.0.1',
-                        'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1', 'native_client_string': ''}]
+                        'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1'}]
     actual_result = cli.enrich_instances_metadata(
-        instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%'})
+        instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%',
+                                                       'ssh_connection_string_enabled': True})
     assert actual_result == expected_result
 
 
@@ -358,7 +359,9 @@ def test_cli_enrich_instances_metadata_ssh_ssm_string(aws_ec2_instance_fake):
                         'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1', 'native_client_string': ''}]
     actual_result = cli.enrich_instances_metadata(
         instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%',
-                                                       'aws_ssm_connection_string': 'ssm %instance_id%'})
+                                                       'aws_ssm_connection_string': 'ssm %instance_id%',
+                                                       'ssh_connection_string_enabled': True,
+                                                       'aws_ssm_connection_string_enabled': True})
     assert actual_result == expected_result
 
 
@@ -370,6 +373,8 @@ def test_cli_enrich_instances_metadata_ssh_ssm_string_cloud(aws_ec2_instance_fak
     actual_result = cli.enrich_instances_metadata(
         instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%',
                                                        'aws_ssm_connection_string': 'ssm %instance_id%',
+                                                       'ssh_connection_string_enabled': True,
+                                                       'aws_ssm_connection_string_enabled': True,
                                                        'default_cloud': 'aws'})
     assert actual_result == expected_result
 
@@ -384,6 +389,8 @@ def test_cli_enrich_instances_metadata_existing_tags(aws_ec2_instance_fake):
         instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%',
                                                        'aws_ssm_connection_string': 'ssm %instance_id%',
                                                        'default_cloud': 'aws',
+                                                       'ssh_connection_string_enabled': True,
+                                                       'aws_ssm_connection_string_enabled': True,
                                                        'printable_tags': ['environment', 'department']})
     assert actual_result == expected_result
 
@@ -391,13 +398,14 @@ def test_cli_enrich_instances_metadata_existing_tags(aws_ec2_instance_fake):
 def test_cli_enrich_instances_metadata_non_existing_tags(aws_ec2_instance_fake):
     """Test that instance metadata enrichment works for non-existing tags"""
     expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'private_ip_address': '10.0.0.1',
-                        'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1',
-                        'native_client_string': 'ssm i-123456', 'environment': 'production',
+                        'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1', 'environment': 'production',
                         'department': 'marketing', 'application': ''}]
     actual_result = cli.enrich_instances_metadata(
         instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%',
                                                        'aws_ssm_connection_string': 'ssm %instance_id%',
                                                        'default_cloud': 'aws',
+                                                       'ssh_connection_string_enabled': True,
+                                                       'aws_ssm_connection_string_enabled': False,
                                                        'printable_tags': ['environment', 'department', 'application']})
     assert actual_result == expected_result
 
@@ -413,7 +421,8 @@ def test_cli_generate_table_one_instance_aws(aws_ec2_instance_fake):
     instance = aws_ec2_instance_fake.copy()
     instance['ssh_string'] = 'ssh localhost'
     instance['native_client_string'] = 'ssm localhost'
-    actual_result = cli.generate_table(app_config={'default_cloud': 'aws'}, instances=[instance])
+    actual_result = cli.generate_table(app_config={'default_cloud': 'aws', 'ssh_connection_string_enabled': True,
+                                                   'aws_ssm_connection_string_enabled': True}, instances=[instance])
     assert 'SSH Connection' in actual_result and 'SSM Connection' in actual_result and 'i-123456' in actual_result
 
 
@@ -422,5 +431,6 @@ def test_cli_generate_table_one_instance_fake_cloud(aws_ec2_instance_fake):
     instance = aws_ec2_instance_fake.copy()
     instance['ssh_string'] = 'ssh localhost'
     instance['native_client_string'] = 'ssm localhost'
-    actual_result = cli.generate_table(app_config={'default_cloud': 'fakecloud'}, instances=[instance])
-    assert 'SSH Connection' in actual_result and 'Native Cloud Connection' in actual_result
+    actual_result = cli.generate_table(app_config={'default_cloud': 'fakecloud', 'ssh_connection_string_enabled': False,
+                                                   'aws_ssm_connection_string_enabled': True}, instances=[instance])
+    assert 'SSH Connection' not in actual_result and 'Native Cloud Connection' in actual_result
