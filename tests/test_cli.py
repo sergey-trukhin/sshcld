@@ -2,6 +2,9 @@
 
 """Tests for cli.py file"""
 
+import os
+from pathlib import Path
+
 import pytest
 
 from sshcld import cli
@@ -17,14 +20,16 @@ def create_aws_ec2_instance_fake():
 
 def test_cli_open_yaml_file_minimal_config():
     """Test that minimal config is parsed correctly"""
-    actual_result = cli.open_yaml_file(path='sshcld_minimal.yaml')
+    config_path = os.path.join(Path(__file__).parent, 'sshcld_minimal.yaml')
+    actual_result = cli.open_yaml_file(path=config_path)
     expected_result = {'default_cloud': 'aws'}
     assert actual_result == expected_result
 
 
 def test_cli_open_yaml_file_default_config():
     """Test that default config is parsed correctly"""
-    actual_result = cli.open_yaml_file(path='sshcld_default.yaml')
+    config_path = os.path.join(Path(__file__).parent, 'sshcld_default.yaml')
+    actual_result = cli.open_yaml_file(path=config_path)
     expected_result = {'aws_ssm_connection_string': 'aws ssm start-session --target %instance_id%',
                        'printable_tags': ['environment', 'department', 'application'],
                        'ssh_connection_string': 'ssh %private_ip_address%', 'default_cloud': 'aws'}
@@ -33,7 +38,9 @@ def test_cli_open_yaml_file_default_config():
 
 def test_cli_load_configs_one_file():
     """Test that non-existing config is handled correctly"""
-    actual_result = cli.load_configs(default_config_path='sshcld_default.yaml', user_config_path='does_not_exist.yaml')
+    config_path_default = os.path.join(Path(__file__).parent, 'sshcld_default.yaml')
+    config_path_user = os.path.join(Path(__file__).parent, 'does_not_exist.yaml')
+    actual_result = cli.load_configs(default_config_path=config_path_default, user_config_path=config_path_user)
     expected_result = {'aws_ssm_connection_string': 'aws ssm start-session --target %instance_id%',
                        'printable_tags': ['environment', 'department', 'application'],
                        'ssh_connection_string': 'ssh %private_ip_address%', 'default_cloud': 'aws'}
@@ -42,7 +49,9 @@ def test_cli_load_configs_one_file():
 
 def test_cli_load_configs_one_file_and_empty():
     """Test that empty config is handled correctly"""
-    actual_result = cli.load_configs(default_config_path='sshcld_default.yaml', user_config_path='sshcld_empty.yaml')
+    config_path_default = os.path.join(Path(__file__).parent, 'sshcld_default.yaml')
+    config_path_user = os.path.join(Path(__file__).parent, 'sshcld_empty.yaml')
+    actual_result = cli.load_configs(default_config_path=config_path_default, user_config_path=config_path_user)
     expected_result = {'aws_ssm_connection_string': 'aws ssm start-session --target %instance_id%',
                        'printable_tags': ['environment', 'department', 'application'],
                        'ssh_connection_string': 'ssh %private_ip_address%', 'default_cloud': 'aws'}
@@ -51,7 +60,9 @@ def test_cli_load_configs_one_file_and_empty():
 
 def test_cli_load_configs_two_files():
     """Test that two configs are parsed correctly"""
-    actual_result = cli.load_configs(default_config_path='sshcld_default.yaml', user_config_path='sshcld_user.yaml')
+    config_path_default = os.path.join(Path(__file__).parent, 'sshcld_default.yaml')
+    config_path_user = os.path.join(Path(__file__).parent, 'sshcld_user.yaml')
+    actual_result = cli.load_configs(default_config_path=config_path_default, user_config_path=config_path_user)
     expected_result = {'aws_ssm_connection_string': 'aws ssm start-session --target %instance_id%',
                        'printable_tags': ['environment', 'department', 'application'],
                        'ssh_connection_string': 'ssh username@%private_ip_address%', 'default_cloud': 'aws',
