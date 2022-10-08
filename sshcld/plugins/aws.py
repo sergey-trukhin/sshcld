@@ -86,11 +86,8 @@ def parse_instances(instances=None):
                     }
                 )
 
-    except botocore.exceptions.NoCredentialsError as error:
-        print(error)  # error message is not shown without print
-        raise AwsApiError(error) from error
-
-    except botocore.exceptions.EndpointConnectionError as error:
+    except (botocore.exceptions.NoCredentialsError, botocore.exceptions.EndpointConnectionError,
+            botocore.exceptions.UnauthorizedSSOTokenError) as error:
         print(error)  # error message is not shown without print
         raise AwsApiError(error) from error
 
