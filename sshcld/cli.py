@@ -193,8 +193,11 @@ def enrich_instances_metadata(app_config=None, instances=None):
         for converted_tag in instance['tags']:
             instance[converted_tag] = instance['tags'][converted_tag]
 
-        instance['ssh_string'] = ssh_string
-        instance['native_client_string'] = native_client_string
+        if app_config.get('ssh_connection_string_enabled'):
+            instance['ssh_string'] = ssh_string
+
+        if app_config.get('aws_ssm_connection_string_enabled'):
+            instance['native_client_string'] = native_client_string
 
         del instance['tags']
 
@@ -217,8 +220,13 @@ def generate_table(app_config=None, instances=None):
         native_connection_name = 'Native Cloud Connection'
 
     table_headers = {'instance_id': 'Instance ID', 'instance_name': 'Instance Name',
-                     'private_ip_address': 'Private IP', 'public_ip_address': 'Public IP',
-                     'ssh_string': 'SSH Connection', 'native_client_string': native_connection_name}
+                     'private_ip_address': 'Private IP', 'public_ip_address': 'Public IP'}
+
+    if app_config.get('ssh_connection_string_enabled'):
+        table_headers['ssh_string'] = 'SSH Connection'
+
+    if app_config.get('aws_ssm_connection_string_enabled'):
+        table_headers['native_client_string'] = native_connection_name
 
     table = tabulate(instances, headers=table_headers)
 
