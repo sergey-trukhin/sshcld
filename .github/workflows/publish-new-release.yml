@@ -31,12 +31,12 @@ jobs:
           pytest
       - name: Build package
         run: python -m build --sdist --wheel --outdir dist/ .
-#      - name: Publish package to test repository
-#        uses: pypa/gh-action-pypi-publish@37f50c210e3d2f9450da2cd423303d6a14a6e29f
-#        with:
-#          user: __token__
-#          password: ${{ secrets.PYPI_API_TOKEN_TEST }}
-#          repository_url: https://test.pypi.org/legacy/
+      - name: Publish package to test repository
+        uses: pypa/gh-action-pypi-publish@37f50c210e3d2f9450da2cd423303d6a14a6e29f
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN_TEST }}
+          repository_url: https://test.pypi.org/legacy/
       - name: Publish package to production repository
         uses: pypa/gh-action-pypi-publish@37f50c210e3d2f9450da2cd423303d6a14a6e29f
         with:
