@@ -10,7 +10,7 @@ flake8
 echo "*** FINISH FLAKE8 TESTS ***"
 
 echo "*** START PYLINT TESTS ***"
-pylint /app/
+pylint .
 echo "*** FINISH PYLINT TESTS ***"
 
 exit 0
