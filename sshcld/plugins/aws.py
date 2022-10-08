@@ -90,6 +90,10 @@ def parse_instances(instances=None):
         print(error)  # error message is not shown without print
         raise AwsApiError(error) from error
 
+    except botocore.exceptions.EndpointConnectionError as error:
+        print(error)  # error message is not shown without print
+        raise AwsApiError(error) from error
+
     except botocore.exceptions.ClientError as error:
         try:
             error_message = error.response['Error']['Message']
