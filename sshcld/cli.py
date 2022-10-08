@@ -66,7 +66,10 @@ def replace_variables(string=None, instance=None):
         return ''
 
     for variable in variables_to_replace:
-        string = string.replace(f'%{variable}%', instance[variable])
+        if instance.get(variable):
+            string = string.replace(f'%{variable}%', instance.get(variable, ''))
+        else:
+            string = string.replace(f'%{variable}%', '')
 
     if instance.get('tags', None):
         for tag in instance['tags']:

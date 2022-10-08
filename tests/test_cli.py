@@ -104,6 +104,24 @@ def test_cli_replace_variables_all_matches_with_tags(aws_ec2_instance_fake):
     assert actual_result == expected_result
 
 
+def test_cli_replace_variables_no_public_ip():
+    """Test that variables replacement works if instance doesn't have Public IP attribute"""
+    instance = {'instance_id': 'i-123456', 'instance_name': 'nginx', 'private_ip_address': '10.0.0.1',
+                'tags': {'environment': 'production', 'department': 'marketing'}}
+    actual_result = cli.replace_variables(string='ssh username@%public_ip_address%', instance=instance)
+    expected_result = 'ssh username@'
+    assert actual_result == expected_result
+
+
+def test_cli_replace_variables_no_tags():
+    """Test that variables replacement works if instance doesn't have Public IP attribute"""
+    instance = {'instance_id': 'i-123456', 'instance_name': 'nginx',
+                'private_ip_address': '10.0.0.1', 'public_ip_address': '1.2.3.4'}
+    actual_result = cli.replace_variables(string='ssh username@%tag_department%', instance=instance)
+    expected_result = 'ssh username@%tag_department%'
+    assert actual_result == expected_result
+
+
 def test_cli_get_cli_args_no_args():
     """Test that CLI arguments are parsed correctly if not defined"""
     actual_result = cli.get_cli_args([])
