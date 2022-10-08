@@ -3,6 +3,11 @@ Get cloud servers list for your SSH client
 
 Currently, the tool supports AWS cloud only. Support for other clouds is planned for future releases.
 
+## Installation
+```commandline
+pip install sshcld
+```
+
 ## Usage
 ### Basic usage
 Show all cloud servers using default credentials and region
