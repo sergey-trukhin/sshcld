@@ -32,7 +32,7 @@ jobs:
       - name: Install sshcld package
         run: |
           ls -la
-          pip install ./sshcld/setup.py
+          pip install .
       - name: Lint with flake8
         run: |
           flake8
