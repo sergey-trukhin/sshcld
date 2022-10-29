@@ -70,6 +70,7 @@ def parse_instances(instances=None):
                     {
                         'instance_id': instance.instance_id,
                         'instance_name': instance_name,
+                        'instance_state': instance.state.get('Name', 'unknown'),
                         'private_ip_address': instance.private_ip_address,
                         'public_ip_address': instance.public_ip_address,
                         'tags': tags,
@@ -80,6 +81,7 @@ def parse_instances(instances=None):
                     {
                         'instance_id': 'unknown',
                         'instance_name': instance_name,
+                        'instance_state': 'unknown',
                         'private_ip_address': 'unknown',
                         'public_ip_address': 'unknown',
                         'tags': [],

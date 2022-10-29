@@ -219,7 +219,7 @@ def generate_table(app_config=None, instances=None):
     else:
         native_connection_name = 'Native Cloud Connection'
 
-    table_headers = {'instance_id': 'Instance ID', 'instance_name': 'Instance Name',
+    table_headers = {'instance_id': 'Instance ID', 'instance_name': 'Instance Name', 'instance_state': 'State',
                      'private_ip_address': 'Private IP', 'public_ip_address': 'Public IP'}
 
     if app_config.get('ssh_connection_string_enabled'):

@@ -13,8 +13,9 @@ from sshcld import cli
 @pytest.fixture(name='aws_ec2_instance_fake')
 def create_aws_ec2_instance_fake():
     """Fake instance that will be reused for different tests"""
-    instance = {'instance_id': 'i-123456', 'instance_name': 'nginx', 'private_ip_address': '10.0.0.1',
-                'public_ip_address': '1.2.3.4', 'tags': {'environment': 'production', 'department': 'marketing'}}
+    instance = {'instance_id': 'i-123456', 'instance_name': 'nginx', 'instance_state': 'running',
+                'private_ip_address': '10.0.0.1', 'public_ip_address': '1.2.3.4',
+                'tags': {'environment': 'production', 'department': 'marketing'}}
     yield instance
 
 
@@ -106,8 +107,8 @@ def test_cli_replace_variables_all_matches_with_tags(aws_ec2_instance_fake):
 
 def test_cli_replace_variables_no_public_ip():
     """Test that variables replacement works if instance doesn't have Public IP attribute"""
-    instance = {'instance_id': 'i-123456', 'instance_name': 'nginx', 'private_ip_address': '10.0.0.1',
-                'tags': {'environment': 'production', 'department': 'marketing'}}
+    instance = {'instance_id': 'i-123456', 'instance_name': 'nginx', 'instance_state': 'running',
+                'private_ip_address': '10.0.0.1', 'tags': {'environment': 'production', 'department': 'marketing'}}
     actual_result = cli.replace_variables(string='ssh username@%public_ip_address%', instance=instance)
     expected_result = 'ssh username@'
     assert actual_result == expected_result
@@ -115,7 +116,7 @@ def test_cli_replace_variables_no_public_ip():
 
 def test_cli_replace_variables_no_tags():
     """Test that variables replacement works if instance doesn't have Public IP attribute"""
-    instance = {'instance_id': 'i-123456', 'instance_name': 'nginx',
+    instance = {'instance_id': 'i-123456', 'instance_name': 'nginx', 'instance_state': 'pending',
                 'private_ip_address': '10.0.0.1', 'public_ip_address': '1.2.3.4'}
     actual_result = cli.replace_variables(string='ssh username@%tag_department%', instance=instance)
     expected_result = 'ssh username@%tag_department%'
@@ -337,7 +338,7 @@ def test_cli_enrich_instances_metadata_no_instances():
 
 def test_cli_enrich_instances_metadata_no_config(aws_ec2_instance_fake):
     """Test that instance metadata enrichment works if no config"""
-    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx',
+    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'instance_state': 'running',
                         'private_ip_address': '10.0.0.1', 'public_ip_address': '1.2.3.4'}]
     actual_result = cli.enrich_instances_metadata(instances=[aws_ec2_instance_fake], app_config={})
     assert actual_result == expected_result
@@ -345,8 +346,8 @@ def test_cli_enrich_instances_metadata_no_config(aws_ec2_instance_fake):
 
 def test_cli_enrich_instances_metadata_ssh_string(aws_ec2_instance_fake):
     """Test that instance metadata enrichment works for SSH string"""
-    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'private_ip_address': '10.0.0.1',
-                        'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1'}]
+    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'instance_state': 'running',
+                        'private_ip_address': '10.0.0.1', 'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1'}]
     actual_result = cli.enrich_instances_metadata(
         instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%',
                                                        'ssh_connection_string_enabled': True})
@@ -355,8 +356,9 @@ def test_cli_enrich_instances_metadata_ssh_string(aws_ec2_instance_fake):
 
 def test_cli_enrich_instances_metadata_ssh_ssm_string(aws_ec2_instance_fake):
     """Test that instance metadata enrichment works for SSH and SSM strings"""
-    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'private_ip_address': '10.0.0.1',
-                        'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1', 'native_client_string': ''}]
+    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'instance_state': 'running',
+                        'private_ip_address': '10.0.0.1', 'public_ip_address': '1.2.3.4',
+                        'ssh_string': 'ssh 10.0.0.1', 'native_client_string': ''}]
     actual_result = cli.enrich_instances_metadata(
         instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%',
                                                        'aws_ssm_connection_string': 'ssm %instance_id%',
@@ -367,8 +369,8 @@ def test_cli_enrich_instances_metadata_ssh_ssm_string(aws_ec2_instance_fake):
 
 def test_cli_enrich_instances_metadata_ssh_ssm_string_cloud(aws_ec2_instance_fake):
     """Test that instance metadata enrichment works for SSH string and another cloud string"""
-    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'private_ip_address': '10.0.0.1',
-                        'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1',
+    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'instance_state': 'running',
+                        'private_ip_address': '10.0.0.1', 'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1',
                         'native_client_string': 'ssm i-123456'}]
     actual_result = cli.enrich_instances_metadata(
         instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%',
@@ -381,10 +383,9 @@ def test_cli_enrich_instances_metadata_ssh_ssm_string_cloud(aws_ec2_instance_fak
 
 def test_cli_enrich_instances_metadata_existing_tags(aws_ec2_instance_fake):
     """Test that instance metadata enrichment works for existing tags"""
-    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'private_ip_address': '10.0.0.1',
-                        'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1',
-                        'native_client_string': 'ssm i-123456', 'environment': 'production',
-                        'department': 'marketing'}]
+    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'instance_state': 'running',
+                        'private_ip_address': '10.0.0.1', 'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1',
+                        'native_client_string': 'ssm i-123456', 'environment': 'production', 'department': 'marketing'}]
     actual_result = cli.enrich_instances_metadata(
         instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%',
                                                        'aws_ssm_connection_string': 'ssm %instance_id%',
@@ -397,9 +398,9 @@ def test_cli_enrich_instances_metadata_existing_tags(aws_ec2_instance_fake):
 
 def test_cli_enrich_instances_metadata_non_existing_tags(aws_ec2_instance_fake):
     """Test that instance metadata enrichment works for non-existing tags"""
-    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'private_ip_address': '10.0.0.1',
-                        'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1', 'environment': 'production',
-                        'department': 'marketing', 'application': ''}]
+    expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'instance_state': 'running',
+                        'private_ip_address': '10.0.0.1', 'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1',
+                        'environment': 'production', 'department': 'marketing', 'application': ''}]
     actual_result = cli.enrich_instances_metadata(
         instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%',
                                                        'aws_ssm_connection_string': 'ssm %instance_id%',
