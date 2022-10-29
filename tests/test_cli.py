@@ -262,6 +262,10 @@ def test_cli_enrich_config_ssm_string(cli_args, yaml_config, expected_result):
     ({'filter': 'environment=production'}, {'default_cloud': 'aws'}, 'environment=production'),
     ({'filter': 'environment=production,department=marketing,application=nginx'},
      {'default_cloud': 'aws'}, 'environment=production,department=marketing,application=nginx'),
+    ({'filter': 'environment=production'},
+     {'default_cloud': 'aws', 'filters': 'environment=staging'}, 'environment=production'),
+    ({}, {'default_cloud': 'aws', 'filters': 'environment=staging'}, 'environment=staging'),
+    ({}, {'default_cloud': 'aws', 'filters': 'environment=staging,department=hr'}, 'environment=staging,department=hr'),
 ])
 def test_cli_enrich_config_filters(cli_args, yaml_config, expected_result):
     """Test that config enrichment works for filters"""
