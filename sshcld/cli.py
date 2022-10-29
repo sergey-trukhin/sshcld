@@ -135,7 +135,7 @@ def enrich_config(cli_args=None, yaml_config=None):
         yaml_config['filters'] = f'Name={cli_args.get("name")}'
     elif cli_args.get('id'):
         yaml_config['filters'] = f'FILTER_INSTANCE_ID={cli_args.get("id")}'
-    else:
+    elif not yaml_config.get('filters') or yaml_config.get('filters') == '':
         yaml_config['filters'] = None
 
     return yaml_config
