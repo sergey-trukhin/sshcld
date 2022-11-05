@@ -58,11 +58,16 @@ ssh_connection_string: ssh %private_ip_address%
 # Change if you want to enable/disable AWS SSM connection string column
 # Or if you want to change connection string's format
 aws_ssm_connection_string_enabled: False
-aws_ssm_connection_string: aws ssm start-session --target %instance_id%
+aws_ssm_connection_string: aws ssm start-session --target %instance_id% --profile %cloud_profile%
 
 # Default filter if "-f" argument is not defined
 #filters: application=nginx,department=marketing,environment=prod
 ```
+
+For `ssh_connection_string` and `aws_ssm_connection_string` parameters you can use placeholders.
+- Several other parameters from this YAML file: `%cloud_region%`, `%cloud_profile%`
+- Several properties of the cloud server: `%instance_id%`, `%instance_name%`, `%private_ip_address%`, `%public_ip_address%`
+- Values of any tags assigned to the cloud server: `%tag_<tag_name>%`
 
 ## Development
 All tool's code is located in the `sshcld` directory.
