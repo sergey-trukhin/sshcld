@@ -42,7 +42,7 @@ def parse_filters(filters=None):
     return filters_list
 
 
-def parse_instances(instances=None):
+def parse_instances(instances=None, region_name='us-east-1'):
     """Parse list of EC2 instances returned by AWS API"""
 
     instances_list = []
@@ -70,6 +70,7 @@ def parse_instances(instances=None):
                     {
                         'instance_id': instance.instance_id,
                         'instance_name': instance_name,
+                        'region': region_name,
                         'instance_state': instance.state.get('Name', 'unknown'),
                         'private_ip_address': instance.private_ip_address,
                         'public_ip_address': instance.public_ip_address,
@@ -82,6 +83,7 @@ def parse_instances(instances=None):
                         'instance_id': 'unknown',
                         'instance_name': instance_name,
                         'instance_state': 'unknown',
+                        'region': region_name,
                         'private_ip_address': 'unknown',
                         'public_ip_address': 'unknown',
                         'tags': [],
@@ -109,32 +111,50 @@ def parse_instances(instances=None):
 def get_instances(region_name='us-east-1', filters=None, profile_name=None):
     """Make AWS API call to get list of EC2 instances"""
 
+    full_instances_list = []
+
     filters_list = parse_filters(filters)
 
-    try:
-        if profile_name is not None and profile_name:
-            boto3.setup_default_session(profile_name=profile_name)
-        ec2 = boto3.resource('ec2', region_name=region_name)
-    except botocore.exceptions.NoRegionError as error:
-        raise AwsApiError(error) from error
-    except botocore.exceptions.ProfileNotFound as error:
-        raise AwsApiError(error) from error
-
-    if len(filters_list) == 1 and isinstance(filters_list[0], str):
-        instances = ec2.instances.filter(
-            InstanceIds=filters_list,
-            DryRun=False,
-        )
+    if region_name == 'all':
+        try:
+            region_session = boto3.Session(profile_name=profile_name)
+            region_client = region_session.client('ec2', region_name='us-east-1')
+            regions_list = [region.get('RegionName') for region in region_client.describe_regions().get('Regions', [])]
+        except botocore.exceptions.NoRegionError as error:
+            raise AwsApiError(error) from error
+        except botocore.exceptions.ProfileNotFound as error:
+            raise AwsApiError(error) from error
     else:
-        instances = ec2.instances.filter(
-            Filters=filters_list,
-            DryRun=False,
-            MaxResults=1000,
-        )
+        regions_list = region_name.strip().split(',')
 
-    try:
-        instances_list = parse_instances(instances)
-    except AwsApiError as error:
-        raise AwsApiError from error
+    for region in regions_list:
 
-    return instances_list
+        try:
+            if profile_name is not None and profile_name:
+                boto3.setup_default_session(profile_name=profile_name)
+            ec2 = boto3.resource('ec2', region_name=region)
+        except botocore.exceptions.NoRegionError as error:
+            raise AwsApiError(error) from error
+        except botocore.exceptions.ProfileNotFound as error:
+            raise AwsApiError(error) from error
+
+        if len(filters_list) == 1 and isinstance(filters_list[0], str):
+            instances = ec2.instances.filter(
+                InstanceIds=filters_list,
+                DryRun=False,
+            )
+        else:
+            instances = ec2.instances.filter(
+                Filters=filters_list,
+                DryRun=False,
+                MaxResults=1000,
+            )
+
+        try:
+            instances_list = parse_instances(instances=instances, region_name=region)
+        except AwsApiError as error:
+            raise AwsApiError from error
+
+        full_instances_list += instances_list
+
+    return full_instances_list

@@ -17,10 +17,10 @@ sshcld
 
 ### Other options
 ```commandline
-sshcld -r us-east-1 -p prod -f department=marketing,application=nginx \
+sshcld -r us-east-1,eu-central-1 -p prod -f department=marketing,application=nginx \
     -n webserver01 -i i-123456789 --aws --azure --ssh --ssm
 ```
-- `-r`, `--region` : specify cloud region.
+- `-r`, `--region` : specify cloud region or comma-separated list of regions. Optionally, you can use "all" for checking all cloud regions.
 - `-p`, `--profile` : specify cloud config profile.
 - `-f`, `--filter` : show only cloud servers whose tags match the specified filter. Use comma to separate several tags. Can not be used with `--name` and `--id` options.
 - `-n`, `--name` : show only cloud servers matching the specified name. Can not be used with `--filter` and `--id` options.
@@ -47,7 +47,8 @@ default_cloud: aws
 # Default region to gather cloud servers list
 #cloud_region: us-east-1
 
-# What cloud config profile should be used by default
+# Default region to gather cloud servers list (can be one region or comma-separated list of regions)
+# Use 'all' to retrieve details from all cloud regions
 #cloud_profile: default
 
 # Change if you want to enable/disable SSH connection string column

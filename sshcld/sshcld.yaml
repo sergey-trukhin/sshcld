@@ -8,7 +8,8 @@
 # What cloud should be used by default
 default_cloud: aws
 
-# Default region to gather cloud servers list
+# Default region to gather cloud servers list (can be one region or comma-separated list of regions)
+# Use 'all' to retrieve details from all cloud regions
 #cloud_region: us-east-1
 
 # What cloud config profile should be used by default
