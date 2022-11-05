@@ -91,7 +91,8 @@ def get_cli_args(argv=None):
 
     arg_parser = argparse.ArgumentParser(description='Get cloud servers list for your SSH client')
 
-    arg_parser.add_argument('-r', '--region', help='Cloud region')
+    arg_parser.add_argument('-r', '--region', help='One cloud region or comma-separated list. '
+                                                   'Use "all" for checking all cloud regions')
     arg_parser.add_argument('-p', '--profile', help='Cloud profile')
 
     filter_type = arg_parser.add_mutually_exclusive_group()
@@ -229,7 +230,7 @@ def generate_table(app_config=None, instances=None):
         native_connection_name = 'Native Cloud Connection'
 
     table_headers = {'instance_id': 'Instance ID', 'instance_name': 'Instance Name', 'instance_state': 'State',
-                     'private_ip_address': 'Private IP', 'public_ip_address': 'Public IP'}
+                     'region': 'Region', 'private_ip_address': 'Private IP', 'public_ip_address': 'Public IP'}
 
     if app_config.get('ssh_connection_string_enabled'):
         table_headers['ssh_string'] = 'SSH Connection'
