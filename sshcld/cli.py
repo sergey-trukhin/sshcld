@@ -57,10 +57,11 @@ def load_configs(default_config_path=None, user_config_path=None):
     return all_configs
 
 
-def replace_variables(string=None, instance=None):
+def replace_variables(string=None, instance=None, app_config=None):
     """Replace variables with real values"""
 
     variables_to_replace = ['instance_id', 'instance_name', 'private_ip_address', 'public_ip_address']
+    config_variables_to_replace = ['cloud_region', 'cloud_profile']
 
     if string is None or instance is None:
         return ''
@@ -74,6 +75,13 @@ def replace_variables(string=None, instance=None):
     if instance.get('tags', None):
         for tag in instance['tags']:
             string = string.replace(f'%tag_{tag}%', instance['tags'][tag])
+
+    if app_config is not None:
+        for variable in config_variables_to_replace:
+            if app_config.get(variable) and app_config.get(variable) != '':
+                string = string.replace(f'%{variable}%', app_config.get(variable, ''))
+            else:
+                string = string.replace(f'%{variable}%', '')
 
     return string
 
@@ -178,9 +186,10 @@ def enrich_instances_metadata(app_config=None, instances=None):
         native_client_string_param = None
 
     for instance in instances:
-        ssh_string = replace_variables(string=app_config.get('ssh_connection_string', ''), instance=instance)
+        ssh_string = replace_variables(string=app_config.get('ssh_connection_string', ''), instance=instance,
+                                       app_config=app_config)
         native_client_string = replace_variables(string=app_config.get(native_client_string_param, ''),
-                                                 instance=instance)
+                                                 instance=instance, app_config=app_config)
 
         for tag in list(instance['tags'].keys()):
             if tag not in printable_tags:

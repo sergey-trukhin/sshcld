@@ -31,9 +31,10 @@ def test_cli_open_yaml_file_default_config():
     """Test that default config is parsed correctly"""
     config_path = os.path.join(Path(__file__).parent, 'sshcld_default.yaml')
     actual_result = cli.open_yaml_file(path=config_path)
-    expected_result = {'aws_ssm_connection_string': 'aws ssm start-session --target %instance_id%',
-                       'printable_tags': ['environment', 'department', 'application'],
-                       'ssh_connection_string': 'ssh %private_ip_address%', 'default_cloud': 'aws'}
+    expected_result = {
+        'aws_ssm_connection_string': 'aws ssm start-session --target %instance_id% --profile %cloud_profile%',
+        'printable_tags': ['environment', 'department', 'application'],
+        'ssh_connection_string': 'ssh %private_ip_address%', 'default_cloud': 'aws', 'cloud_region': 'prod'}
     assert actual_result == expected_result
 
 
@@ -42,9 +43,10 @@ def test_cli_load_configs_one_file():
     config_path_default = os.path.join(Path(__file__).parent, 'sshcld_default.yaml')
     config_path_user = os.path.join(Path(__file__).parent, 'does_not_exist.yaml')
     actual_result = cli.load_configs(default_config_path=config_path_default, user_config_path=config_path_user)
-    expected_result = {'aws_ssm_connection_string': 'aws ssm start-session --target %instance_id%',
-                       'printable_tags': ['environment', 'department', 'application'],
-                       'ssh_connection_string': 'ssh %private_ip_address%', 'default_cloud': 'aws'}
+    expected_result = {
+        'aws_ssm_connection_string': 'aws ssm start-session --target %instance_id% --profile %cloud_profile%',
+        'printable_tags': ['environment', 'department', 'application'],
+        'ssh_connection_string': 'ssh %private_ip_address%', 'default_cloud': 'aws', 'cloud_region': 'prod'}
     assert actual_result == expected_result
 
 
@@ -53,9 +55,10 @@ def test_cli_load_configs_one_file_and_empty():
     config_path_default = os.path.join(Path(__file__).parent, 'sshcld_default.yaml')
     config_path_user = os.path.join(Path(__file__).parent, 'sshcld_empty.yaml')
     actual_result = cli.load_configs(default_config_path=config_path_default, user_config_path=config_path_user)
-    expected_result = {'aws_ssm_connection_string': 'aws ssm start-session --target %instance_id%',
-                       'printable_tags': ['environment', 'department', 'application'],
-                       'ssh_connection_string': 'ssh %private_ip_address%', 'default_cloud': 'aws'}
+    expected_result = {
+        'aws_ssm_connection_string': 'aws ssm start-session --target %instance_id% --profile %cloud_profile%',
+        'printable_tags': ['environment', 'department', 'application'],
+        'ssh_connection_string': 'ssh %private_ip_address%', 'default_cloud': 'aws', 'cloud_region': 'prod'}
     assert actual_result == expected_result
 
 
@@ -64,23 +67,26 @@ def test_cli_load_configs_two_files():
     config_path_default = os.path.join(Path(__file__).parent, 'sshcld_default.yaml')
     config_path_user = os.path.join(Path(__file__).parent, 'sshcld_user.yaml')
     actual_result = cli.load_configs(default_config_path=config_path_default, user_config_path=config_path_user)
-    expected_result = {'aws_ssm_connection_string': 'aws ssm start-session --target %instance_id%',
-                       'printable_tags': ['environment', 'department', 'application'],
-                       'ssh_connection_string': 'ssh username@%private_ip_address%', 'default_cloud': 'aws',
-                       'test_parameter': 'test_value'}
+    expected_result = {
+        'aws_ssm_connection_string': 'aws ssm start-session --target %instance_id% --profile %cloud_profile%',
+        'printable_tags': ['environment', 'department', 'application'],
+        'ssh_connection_string': 'ssh username@%private_ip_address%', 'default_cloud': 'aws',
+        'test_parameter': 'test_value', 'cloud_region': 'prod'}
     assert actual_result == expected_result
 
 
 def test_cli_replace_variables_no_matches(aws_ec2_instance_fake):
     """Test that variables replacement works if no matches"""
-    actual_result = cli.replace_variables(string='ssh username@localhost', instance=aws_ec2_instance_fake)
+    actual_result = cli.replace_variables(string='ssh username@localhost', instance=aws_ec2_instance_fake,
+                                          app_config={})
     expected_result = 'ssh username@localhost'
     assert actual_result == expected_result
 
 
 def test_cli_replace_variables_one_match(aws_ec2_instance_fake):
     """Test that variables replacement works if one match"""
-    actual_result = cli.replace_variables(string='ssh username@%private_ip_address%', instance=aws_ec2_instance_fake)
+    actual_result = cli.replace_variables(string='ssh username@%private_ip_address%', instance=aws_ec2_instance_fake,
+                                          app_config={})
     expected_result = 'ssh username@10.0.0.1'
     assert actual_result == expected_result
 
@@ -89,8 +95,29 @@ def test_cli_replace_variables_all_matches(aws_ec2_instance_fake):
     """Test that variables replacement works if all matches"""
     actual_result = cli.replace_variables(string='id=%instance_id%, name=%instance_name%, '
                                                  'private_ip=%private_ip_address%, public_ip=%public_ip_address%',
-                                          instance=aws_ec2_instance_fake)
+                                          instance=aws_ec2_instance_fake, app_config={})
     expected_result = 'id=i-123456, name=nginx, private_ip=10.0.0.1, public_ip=1.2.3.4'
+    assert actual_result == expected_result
+
+
+def test_cli_replace_variables_all_matches_with_config(aws_ec2_instance_fake):
+    """Test that variables replacement works if all matches including variables from YAML config"""
+    actual_result = cli.replace_variables(string='id=%instance_id%, name=%instance_name%, '
+                                                 'private_ip=%private_ip_address%, public_ip=%public_ip_address%, '
+                                                 'region=%cloud_region%, profile=%cloud_profile%',
+                                          instance=aws_ec2_instance_fake,
+                                          app_config={'cloud_region': 'us-east-1', 'cloud_profile': 'prod'})
+    expected_result = 'id=i-123456, name=nginx, private_ip=10.0.0.1, public_ip=1.2.3.4, region=us-east-1, profile=prod'
+    assert actual_result == expected_result
+
+
+def test_cli_replace_variables_all_matches_with_empty_config(aws_ec2_instance_fake):
+    """Test that variables replacement works if all matches including variables from YAML config"""
+    actual_result = cli.replace_variables(string='id=%instance_id%, name=%instance_name%, '
+                                                 'private_ip=%private_ip_address%, public_ip=%public_ip_address%, '
+                                                 'region=%cloud_region%, profile=%cloud_profile%',
+                                          instance=aws_ec2_instance_fake, app_config={})
+    expected_result = 'id=i-123456, name=nginx, private_ip=10.0.0.1, public_ip=1.2.3.4, region=, profile='
     assert actual_result == expected_result
 
 
@@ -99,7 +126,7 @@ def test_cli_replace_variables_all_matches_with_tags(aws_ec2_instance_fake):
     actual_result = cli.replace_variables(string='id=%instance_id%, name=%instance_name%, '
                                                  'private_ip=%private_ip_address%, public_ip=%public_ip_address%, '
                                                  'env=%tag_environment%, app=%tag_application%, team=%tag_department%',
-                                          instance=aws_ec2_instance_fake)
+                                          instance=aws_ec2_instance_fake, app_config={})
     expected_result = ('id=i-123456, name=nginx, private_ip=10.0.0.1, public_ip=1.2.3.4, env=production, '
                        'app=%tag_application%, team=marketing')
     assert actual_result == expected_result
@@ -109,7 +136,8 @@ def test_cli_replace_variables_no_public_ip():
     """Test that variables replacement works if instance doesn't have Public IP attribute"""
     instance = {'instance_id': 'i-123456', 'instance_name': 'nginx', 'instance_state': 'running',
                 'private_ip_address': '10.0.0.1', 'tags': {'environment': 'production', 'department': 'marketing'}}
-    actual_result = cli.replace_variables(string='ssh username@%public_ip_address%', instance=instance)
+    actual_result = cli.replace_variables(string='ssh username@%public_ip_address%', instance=instance,
+                                          app_config={})
     expected_result = 'ssh username@'
     assert actual_result == expected_result
 
@@ -118,7 +146,7 @@ def test_cli_replace_variables_no_tags():
     """Test that variables replacement works if instance doesn't have Public IP attribute"""
     instance = {'instance_id': 'i-123456', 'instance_name': 'nginx', 'instance_state': 'pending',
                 'private_ip_address': '10.0.0.1', 'public_ip_address': '1.2.3.4'}
-    actual_result = cli.replace_variables(string='ssh username@%tag_department%', instance=instance)
+    actual_result = cli.replace_variables(string='ssh username@%tag_department%', instance=instance, app_config={})
     expected_result = 'ssh username@%tag_department%'
     assert actual_result == expected_result
 
@@ -365,8 +393,8 @@ def test_cli_enrich_instances_metadata_ssh_ssm_string(aws_ec2_instance_fake):
                         'ssh_string': 'ssh 10.0.0.1', 'native_client_string': ''}]
     actual_result = cli.enrich_instances_metadata(
         instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%',
-                                                       'aws_ssm_connection_string': 'ssm %instance_id%',
-                                                       'ssh_connection_string_enabled': True,
+                                                       'aws_ssm_connection_string': 'ssm %instance_id% %cloud_profile%',
+                                                       'cloud_profile': 'prod', 'ssh_connection_string_enabled': True,
                                                        'aws_ssm_connection_string_enabled': True})
     assert actual_result == expected_result
 
@@ -375,13 +403,13 @@ def test_cli_enrich_instances_metadata_ssh_ssm_string_cloud(aws_ec2_instance_fak
     """Test that instance metadata enrichment works for SSH string and another cloud string"""
     expected_result = [{'instance_id': 'i-123456', 'instance_name': 'nginx', 'instance_state': 'running',
                         'private_ip_address': '10.0.0.1', 'public_ip_address': '1.2.3.4', 'ssh_string': 'ssh 10.0.0.1',
-                        'native_client_string': 'ssm i-123456'}]
+                        'native_client_string': 'ssm i-123456 prod'}]
     actual_result = cli.enrich_instances_metadata(
         instances=[aws_ec2_instance_fake], app_config={'ssh_connection_string': 'ssh %private_ip_address%',
-                                                       'aws_ssm_connection_string': 'ssm %instance_id%',
+                                                       'aws_ssm_connection_string': 'ssm %instance_id% %cloud_profile%',
                                                        'ssh_connection_string_enabled': True,
                                                        'aws_ssm_connection_string_enabled': True,
-                                                       'default_cloud': 'aws'})
+                                                       'default_cloud': 'aws', 'cloud_profile': 'prod'})
     assert actual_result == expected_result
 
 
